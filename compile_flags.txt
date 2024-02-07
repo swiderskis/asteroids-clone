@@ -1,0 +1,2 @@
+-Ilib/raylib/src
+-Ilib/raylib-cpp/include
