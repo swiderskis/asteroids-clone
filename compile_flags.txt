@@ -1,2 +1,2 @@
--Ilib/raylib/src
--Ilib/raylib-cpp/include
+-isystemlib/raylib/src
+-isystemlib/raylib-cpp/include
