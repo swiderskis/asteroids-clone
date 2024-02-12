@@ -9,6 +9,7 @@ enum class EntityType {
     Enemy,
     Bullet,
     SmallEnemy,
+    Special,
 };
 
 class Entity

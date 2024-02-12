@@ -7,7 +7,6 @@
 #include "Window.hpp"
 
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <random>
 #include <string>
@@ -27,6 +26,18 @@ constexpr int SCORE_Y = 10;
 constexpr int SCORE_FONT_SIZE = 32;
 constexpr int SCORE_MULTIPLIER = 100;
 
+constexpr int SPECIAL_LIFESPAN = 150;
+constexpr int SPECIAL_RADIUS = 50;
+constexpr int SPECIAL_SIDES = 1;
+constexpr int SPECIAL_FILL_R = 13;
+constexpr int SPECIAL_FILL_G = 3;
+constexpr int SPECIAL_FILL_B = 16;
+constexpr int SPECIAL_OUTLINE_THICKNESS = 20;
+constexpr int SPECIAL_SPEED = 10;
+constexpr float SPECIAL_SPEED_MULTIPLIER = 0.97;
+constexpr float SPECIAL_STRENGTH = 10000.0;
+constexpr int SPECIAL_COOLDOWN = 300;
+
 void Game::user_input()
 {
     if (m_entity_manager.entities(EntityType::Player).empty()) {
@@ -40,6 +51,11 @@ void Game::user_input()
 
     if (RMouse::IsButtonPressed(MOUSE_LEFT_BUTTON)) {
         this->spawn_bullet();
+    }
+
+    if (RMouse::IsButtonPressed(MOUSE_RIGHT_BUTTON) && m_frame - m_special_use_frame > SPECIAL_COOLDOWN) {
+        m_special_use_frame = m_frame;
+        this->spawn_special();
     }
 
     if (RKeyboard::IsKeyPressed(KEY_SPACE)) {
@@ -86,9 +102,8 @@ void Game::movement()
             }
 
             break;
-        case EntityType::Bullet:
-            break;
-        default:
+        case EntityType::Enemy:
+        case EntityType::SmallEnemy:
             if (position.x + entity->transform->velocity.x - radius < 0
                 || position.x + entity->transform->velocity.x + radius > (float)m_window.GetWidth()) {
                 entity->transform->velocity.x *= -1;
@@ -97,6 +112,20 @@ void Game::movement()
                 || position.y + entity->transform->velocity.y + radius > (float)m_window.GetHeight()) {
                 entity->transform->velocity.y *= -1;
             }
+            if (!m_entity_manager.entities(EntityType::Special).empty()) {
+                for (const auto& special : m_entity_manager.entities(EntityType::Special)) {
+                    RVector2 distance = special->transform->position - entity->transform->position;
+                    float angle = atan2(distance.y, distance.x);
+                    entity->transform->velocity += RVector2(cos(angle), sin(angle)) * SPECIAL_STRENGTH
+                                                   / (distance.Length() * distance.Length());
+                }
+            }
+            break;
+        case EntityType::Bullet:
+            break;
+        case EntityType::Special:
+            entity->transform->velocity *= SPECIAL_SPEED_MULTIPLIER;
+            break;
         }
 
         entity->transform->position += entity->transform->velocity;
@@ -138,6 +167,20 @@ void Game::collision(EntityType enemy_type)
             distance = enemy->collision->radius + bullet->collision->radius;
             if ((distance_x * distance_x) + (distance_y * distance_y) < distance * distance) {
                 bullet->destroy();
+                enemy->destroy();
+                m_score += enemy->score->score;
+
+                if (enemy_type == EntityType::Enemy) {
+                    this->spawn_small_enemies(enemy);
+                }
+            }
+        }
+
+        for (const auto& special : m_entity_manager.entities(EntityType::Special)) {
+            distance_x = enemy->transform->position.x - special->transform->position.x;
+            distance_y = enemy->transform->position.y - special->transform->position.y;
+            distance = enemy->collision->radius + special->collision->radius;
+            if ((distance_x * distance_x) + (distance_y * distance_y) < distance * distance) {
                 enemy->destroy();
                 m_score += enemy->score->score;
 
@@ -249,6 +292,20 @@ void Game::spawn_bullet()
     bullet->transform = std::make_unique<CTransform>(player_position, velocity, 0.0);
 }
 
+void Game::spawn_special()
+{
+    auto special = m_entity_manager.add_entity(EntityType::Special);
+    special->collision = std::make_unique<CCollision>(SPECIAL_RADIUS);
+    special->lifespan = std::make_unique<CLifespan>(SPECIAL_LIFESPAN);
+    RColor fill(SPECIAL_FILL_R, SPECIAL_FILL_G, SPECIAL_FILL_B);
+    special->shape = std::make_unique<CShape>(SPECIAL_RADIUS, SPECIAL_SIDES, fill, WHITE, SPECIAL_OUTLINE_THICKNESS);
+    RVector2 player_position = m_player->transform->position;
+    auto diff = RMouse::GetPosition() - player_position;
+    float angle = atan2(diff.y, diff.x);
+    RVector2 velocity(SPECIAL_SPEED * cos(angle), SPECIAL_SPEED * sin(angle));
+    special->transform = std::make_unique<CTransform>(m_player->transform->position, velocity, 0.0);
+}
+
 void Game::render()
 {
     for (const auto& entity : m_entity_manager.entities()) {
@@ -262,6 +319,7 @@ void Game::render()
             outline_thickness = m_enemy_config.outline_thickness;
             break;
         case EntityType::Bullet:
+        case EntityType::Special:
             outline_thickness = m_bullet_config.outline_thickness;
             break;
         }
@@ -305,7 +363,7 @@ void Game::toggle_paused()
     m_paused = !m_paused;
 }
 
-Game::Game()
+Game::Game() : m_special_use_frame(-SPECIAL_COOLDOWN)
 {
     std::string config_line_title;
     int window_width = 0;

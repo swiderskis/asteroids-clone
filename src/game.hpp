@@ -52,6 +52,7 @@ class Game
     RWindow m_window;
     int m_frame = 0;
     int m_enemy_spawn_frame = 0;
+    int m_special_use_frame;
     PlayerConfig m_player_config;
     EnemyConfig m_enemy_config;
     BulletConfig m_bullet_config;
@@ -70,6 +71,7 @@ class Game
     void spawn_enemy();
     void spawn_small_enemies(const std::shared_ptr<Entity>& enemy);
     void spawn_bullet();
+    void spawn_special();
     void render();
     void toggle_paused();
 
