@@ -77,6 +77,13 @@ class Window {
     }
 
     /**
+     * Set a custom key to exit program (default is ESC)
+     */
+    void SetExitKey(int key) {
+        ::SetExitKey(key);
+    }
+
+    /**
      * Close window and unload OpenGL context
      */
     void Close() {

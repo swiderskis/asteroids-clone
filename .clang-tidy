@@ -6,13 +6,16 @@ Checks: "*,
   -google-*,
   -llvm*,
   -zircon-*,
+  -bugprone-easily-swappable-parameters,
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -hicpp-uppercase-literal-suffix,
   -misc-non-private-member-variables-in-classes,
   -modernize-use-trailing-return-type,
-  -readability-else-after-return,
-  -readability-static-accessed-through-instance,
   -readability-avoid-const-params-in-decls,
+  -readability-function-cognitive-complexity,
+  -readability-else-after-return,
+  -readability-identifier-length,
+  -readability-static-accessed-through-instance,
   -readability-uppercase-literal-suffix,"
 CheckOptions:
   - { key: readability-identifier-naming.NamespaceCase, value: lower_case }
